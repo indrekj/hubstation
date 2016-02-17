@@ -26,7 +26,7 @@ createEngagement request = do
   visitorId <- fetch "visitor_id" request
 
   operator <- fetchOperator operatorId
-  visitor <- fetchVisitor 4
+  visitor <- fetchVisitor visitorId
 
   Right $ renderResponse operator visitor
 
