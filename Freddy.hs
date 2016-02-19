@@ -21,7 +21,7 @@ respondTo conn queueName callback = do
   consumeMsgs chan (T.pack queueName) NoAck (replyCallback callback chan)
 
 replyCallback userCallback channel (msg, env) = do
-  putStrLn $ "Received message: " ++ (show msg)
+  --putStrLn $ "Received message: " ++ (show msg)
   let response = userCallback "some content"
 
   case buildReply msg response of
