@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
-module Responses.SampleResponse ( sampleResponse ) where
+module Responses.SampleResponse ( sampleResponse, SampleResponse ) where
 
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, toEncoding, defaultOptions, genericToEncoding)

@@ -1,39 +1,38 @@
 {-# OPTIONS -XOverloadedStrings #-}
-module Freddy (respondTo) where
+module Freddy (connect, respondTo) where
 
 import Network.AMQP
 import qualified Data.Text as T
-import Data.Aeson (encode, decode)
+import Data.Aeson (encode, decode, ToJSON)
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Responses.SampleResponse (sampleResponse)
+import Responses.SampleResponse (sampleResponse, SampleResponse)
 import Requests.SampleRequest (SampleRequest)
 
-respondTo :: String -> (Channel -> (Message, Envelope) -> IO ()) -> IO ()
-respondTo queueName callback = do
-  conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+connect :: String -> T.Text -> T.Text -> T.Text -> IO Connection
+connect host vhost user password =
+  openConnection "127.0.0.1" "/" "guest" "guest"
+
+respondTo :: (ToJSON r) => Connection -> String -> (String -> r) -> IO ConsumerTag
+respondTo conn queueName callback = do
   chan <- openChannel conn
 
   declareQueue chan newQueue {queueName = T.pack queueName}
 
-  consumeMsgs chan (T.pack queueName) NoAck (callback chan)
+  consumeMsgs chan (T.pack queueName) NoAck (replyCallback callback chan)
 
-  getLine -- wait for keypress
-  closeConnection conn
-  putStrLn "connection closed"
+replyCallback userCallback channel (msg, env) = do
+  putStrLn $ "Received message: " ++ (show msg)
+  let response = userCallback "some content"
 
-buildReply :: Message -> Maybe (T.Text, Message)
-buildReply originalMsg = do
+  case buildReply msg response of
+    Just (queueName, reply) -> (publishMsg channel "" queueName reply)
+    Nothing -> putStrLn $ "Could not reply"
+
+buildReply :: (ToJSON r) => Message -> r -> Maybe (T.Text, Message)
+buildReply originalMsg response = do
   request <- (decode (msgBody originalMsg) :: Maybe SampleRequest)
   queueName <- msgReplyTo originalMsg
-  let reply = newMsg {msgBody = (encode $ sampleResponse $ show request),
+  let reply = newMsg {msgBody = (encode $ response),
                       msgCorrelationID = (msgCorrelationID originalMsg),
                       msgDeliveryMode = Just NonPersistent}
   Just $ (queueName, reply)
-
-sampleCallback :: Channel -> (Message, Envelope) -> IO ()
-sampleCallback channel (msg, env) = do
-  putStrLn $ "Received message: " ++ (show msg)
-
-  case buildReply msg of
-    Just (queueName, reply) -> (publishMsg channel "" queueName reply)
-    Nothing -> putStrLn $ "Could not reply"

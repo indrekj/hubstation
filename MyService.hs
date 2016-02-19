@@ -1,3 +1,5 @@
+module MyService where
+
 import Control.Monad
 import Request (Request, fetch)
 import SampleRequests (validRequest, fetchFailRequest, noKeyRequest)
