@@ -4,6 +4,7 @@ module Freddy (connect, respondTo) where
 import Network.AMQP
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Freddy.Result
 
 connect :: String -> T.Text -> T.Text -> T.Text -> IO Connection
 connect host vhost user password =
@@ -26,7 +27,7 @@ replyCallback userCallback channel (msg, env) = do
     Just (queueName, reply) -> (publishMsg channel "" queueName reply)
     Nothing -> putStrLn $ "Could not reply"
 
-buildReply :: Message -> String -> BL.ByteString -> Maybe (T.Text, Message)
+buildReply :: Message -> Result -> BL.ByteString -> Maybe (T.Text, Message)
 buildReply originalMsg t body = do
   queueName <- msgReplyTo originalMsg
 
@@ -34,12 +35,12 @@ buildReply originalMsg t body = do
     msgBody          = body,
     msgCorrelationID = msgCorrelationID originalMsg,
     msgDeliveryMode  = Just NonPersistent,
-    msgType          = Just $ T.pack t
+    msgType          = Just $ T.pack $ show t
   }
 
   Just $ (queueName, reply)
 
-extractResult :: Either BL.ByteString BL.ByteString -> (String, BL.ByteString)
+extractResult :: Either BL.ByteString BL.ByteString -> (Result, BL.ByteString)
 extractResult response = case response of
-  Right r -> ("success", r)
-  Left r -> ("error", r)
+  Right r -> (Success, r)
+  Left r -> (Error, r)
