@@ -13,6 +13,11 @@ data Request =
   EngagementCreateRequest {
     operator_id :: Int,
     visitor_id  :: Int
+  } |
+
+  EngagementEndRequest {
+    operator_id :: Int,
+    visitor_id  :: Int
   }
 
   deriving (Generic, Show)
@@ -25,5 +30,9 @@ instance FromJSON Request where
 mkReq "create_engagement" o =
   EngagementCreateRequest <$> o .: "operator_id" <*> o .: "visitor_id"
 
+mkReq "finish_engagement" o =
+  EngagementEndRequest <$> o .: "operator_id" <*> o .: "visitor_id"
+
 mkReq "sample_request" o = SampleRequest <$> o .: "message"
+
 mkReq kind o = fail ("unknown kind: " ++ kind)

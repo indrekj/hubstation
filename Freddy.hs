@@ -19,8 +19,6 @@ respondTo conn queueName callback = do
 
 replyCallback :: (BL.ByteString -> BL.ByteString) -> Channel -> (Message, Envelope) -> IO ()
 replyCallback userCallback channel (msg, env) = do
-  --putStrLn $ "Received message: " ++ (show msg)
-
   case buildReply msg userCallback of
     Just (queueName, reply) -> (publishMsg channel "" queueName reply)
     Nothing -> putStrLn $ "Could not reply"
@@ -33,7 +31,8 @@ buildReply originalMsg userCallback = do
   let reply = newMsg {
     msgBody          = userCallback requestBody,
     msgCorrelationID = msgCorrelationID originalMsg,
-    msgDeliveryMode  = Just NonPersistent
+    msgDeliveryMode  = Just NonPersistent,
+    msgType          = Just "success"
   }
 
   Just $ (queueName, reply)
