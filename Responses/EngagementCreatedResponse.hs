@@ -6,7 +6,9 @@ import Data.Aeson (ToJSON)
 import Models
 
 data EngagementCreatedResponse = EngagementCreatedResponse {
-  message :: String
+  engagement_id :: Int,
+  visitor_name :: String,
+  operator_name :: String
 } deriving (Generic, Show)
 
 instance ToJSON EngagementCreatedResponse
@@ -14,8 +16,7 @@ instance ToJSON EngagementCreatedResponse
 engagementCreatedResponse :: Operator -> Visitor -> EngagementCreatedResponse
 engagementCreatedResponse operator visitor =
   EngagementCreatedResponse {
-    message = "Engagement created for operator "
-      ++ operatorName operator
-      ++ " and visitor "
-      ++ visitorName visitor
+    engagement_id = 5,
+    visitor_name = visitorName visitor,
+    operator_name = operatorName operator
   }
