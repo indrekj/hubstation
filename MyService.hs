@@ -7,11 +7,11 @@ import Requests (Request (..))
 import Data.Aeson (ToJSON, FromJSON, encode, decode, eitherDecode)
 import qualified Data.ByteString.Lazy.Char8 as BL
 
-processMessage :: BL.ByteString -> BL.ByteString
+processMessage :: BL.ByteString -> Either BL.ByteString BL.ByteString
 processMessage rawRequest =
   case doIt rawRequest of
-    Right response -> encode response
-    Left error     -> encode $ errorResponse error
+    Right response -> Right $ encode response
+    Left error     -> Left $ encode $ errorResponse error
 
 doIt rawRequest = do
   request <- eitherDecode rawRequest

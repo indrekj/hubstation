@@ -9,7 +9,7 @@ connect :: String -> T.Text -> T.Text -> T.Text -> IO Connection
 connect host vhost user password =
   openConnection host vhost user password
 
-respondTo :: Connection -> String -> (BL.ByteString -> BL.ByteString) -> IO ConsumerTag
+respondTo :: Connection -> String -> (BL.ByteString -> Either BL.ByteString BL.ByteString) -> IO ConsumerTag
 respondTo conn queueName callback = do
   chan <- openChannel conn
 
@@ -17,22 +17,29 @@ respondTo conn queueName callback = do
 
   consumeMsgs chan (T.pack queueName) NoAck (replyCallback callback chan)
 
-replyCallback :: (BL.ByteString -> BL.ByteString) -> Channel -> (Message, Envelope) -> IO ()
+replyCallback :: (BL.ByteString -> Either BL.ByteString BL.ByteString) -> Channel -> (Message, Envelope) -> IO ()
 replyCallback userCallback channel (msg, env) = do
-  case buildReply msg userCallback of
+  let requestBody = msgBody msg
+  let (t, body) = extractResult $ userCallback requestBody
+
+  case buildReply msg t body of
     Just (queueName, reply) -> (publishMsg channel "" queueName reply)
     Nothing -> putStrLn $ "Could not reply"
 
-buildReply :: Message -> (BL.ByteString -> BL.ByteString) -> Maybe (T.Text, Message)
-buildReply originalMsg userCallback = do
-  let requestBody = msgBody originalMsg
+buildReply :: Message -> String -> BL.ByteString -> Maybe (T.Text, Message)
+buildReply originalMsg t body = do
   queueName <- msgReplyTo originalMsg
 
   let reply = newMsg {
-    msgBody          = userCallback requestBody,
+    msgBody          = body,
     msgCorrelationID = msgCorrelationID originalMsg,
     msgDeliveryMode  = Just NonPersistent,
-    msgType          = Just "success"
+    msgType          = Just $ T.pack t
   }
 
   Just $ (queueName, reply)
+
+extractResult :: Either BL.ByteString BL.ByteString -> (String, BL.ByteString)
+extractResult response = case response of
+  Right r -> ("success", r)
+  Left r -> ("error", r)
