@@ -4,7 +4,7 @@ import Control.Monad
 import Fetchers (fetchVisitor, fetchOperator)
 import Responses (Response (..), engagementCreatedResponse, sampleResponse, errorResponse)
 import Requests (Request (..))
-import Data.Aeson (ToJSON, FromJSON, encode, decode, eitherDecode)
+import Data.Aeson (ToJSON, FromJSON, encode, eitherDecode)
 import qualified Data.ByteString.Lazy.Char8 as BL
 
 processMessage :: BL.ByteString -> Either BL.ByteString BL.ByteString
